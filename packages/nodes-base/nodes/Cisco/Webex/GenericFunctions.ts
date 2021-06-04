@@ -75,6 +75,7 @@ export function getEvents() {
 		'room': ['created', 'deleted', 'updated', '*'],
 		'meeting': ['created', 'deleted', 'updated', 'started', 'ended', '*'],
 		'recording': ['created', 'deleted', 'updated', '*'],
+		'telephonyCall': ['created', 'deleted', 'updated'],
 		'*': ['created', 'updated', 'deleted', '*'],
 	};
 
@@ -108,5 +109,6 @@ export function mapResource(event: string) {
 		'room': 'rooms',
 		'meeting': 'meetings',
 		'recording': 'recordings',
+		'telephonyCall': 'telephony_calls',
 	} as { [key: string]: string })[event];
 }

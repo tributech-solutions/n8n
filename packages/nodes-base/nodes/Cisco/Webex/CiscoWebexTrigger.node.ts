@@ -61,6 +61,10 @@ export class CiscoWebexTrigger implements INodeType {
 						value: 'attachmentAction',
 					},
 					{
+						name: 'Meeting',
+						value: 'meeting',
+					},
+					{
 						name: 'Membership',
 						value: 'membership',
 					},
@@ -69,16 +73,16 @@ export class CiscoWebexTrigger implements INodeType {
 						value: 'message',
 					},
 					{
-						name: 'Room',
-						value: 'room',
-					},
-					{
-						name: 'Meeting',
-						value: 'meeting',
+						name: 'Telephony Call',
+						value: 'telephonyCall',
 					},
 					{
 						name: 'Recording',
 						value: 'recording',
+					},
+					{
+						name: 'Room',
+						value: 'room',
 					},
 					{
 						name: '*',
@@ -400,6 +404,152 @@ export class CiscoWebexTrigger implements INodeType {
 						},
 						default: '',
 						description: `limit to a particular room type.`,
+					},
+					{
+						displayName: 'Call Type',
+						name: 'callType',
+						type: 'options',
+						options: [
+							{
+								name: 'Emergency',
+								value: 'emergency',
+							},
+							{
+								name: 'External',
+								value: 'external',
+							},
+							{
+								name: 'Location',
+								value: 'location',
+							},
+							{
+								name: 'Disconnected',
+								value: 'disconnected',
+							},
+							{
+								name: 'Organization',
+								value: 'organization',
+							},
+							{
+								name: 'Other',
+								value: 'other',
+							},
+							{
+								name: 'Repair',
+								value: 'repair',
+							},
+						],
+						displayOptions: {
+							show: {
+								'/resource': [
+									'telephonyCall',
+								],
+								'/event': [
+									'created',
+									'deleted',
+									'updated',
+								],
+							},
+						},
+						default: '',
+						description: `Limit to a particular call type.`,
+					},
+					{
+						displayName: 'Person ID',
+						name: 'personId',
+						type: 'string',
+						displayOptions: {
+							show: {
+								'/resource': [
+									'telephonyCall',
+								],
+								'/event': [
+									'created',
+									'deleted',
+									'updated',
+								],
+							},
+						},
+						default: '',
+						description: 'limit to a particular person, by ID.',
+					},
+					{
+						displayName: 'Personality',
+						name: 'personality',
+						type: 'options',
+						options: [
+							{
+								name: 'Click To Dial',
+								value: 'clickToDial',
+							},
+							{
+								name: 'Originator',
+								value: 'originator',
+							},
+							{
+								name: 'Terminator',
+								value: 'terminator',
+							},
+						],
+						displayOptions: {
+							show: {
+								'/resource': [
+									'telephonyCall',
+								],
+								'/event': [
+									'created',
+									'deleted',
+									'updated',
+								],
+							},
+						},
+						default: '',
+						description: `limit to a particular call personality.`,
+					},
+					{
+						displayName: 'State',
+						name: 'state',
+						type: 'options',
+						options: [
+							{
+								name: 'Alerting',
+								value: 'alerting',
+							},
+							{
+								name: 'Connected',
+								value: 'connected',
+							},
+							{
+								name: 'Connecting',
+								value: 'connecting',
+							},
+							{
+								name: 'Disconnected',
+								value: 'disconnected',
+							},
+							{
+								name: 'Held',
+								value: 'held',
+							},
+							{
+								name: 'Remote Held',
+								value: 'remoteHeld',
+							},
+						],
+						displayOptions: {
+							show: {
+								'/resource': [
+									'telephonyCall',
+								],
+								'/event': [
+									'created',
+									'deleted',
+									'updated',
+								],
+							},
+						},
+						default: '',
+						description: `Limit to a particular call state.`,
 					},
 				],
 			},
