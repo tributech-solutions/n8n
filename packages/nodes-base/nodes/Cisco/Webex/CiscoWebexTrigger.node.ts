@@ -94,6 +94,20 @@ export class CiscoWebexTrigger implements INodeType {
 			},
 			...getEvents(),
 			{
+				displayName: 'Resolve Data',
+				name: 'resolveData',
+				type: 'boolean',
+				displayOptions: {
+					show: {
+						resource: [
+							'attachmentAction',
+						],
+					},
+				},
+				default: true,
+				description: 'By default the response only contain a reference to the data the user inputed<br />If this option gets activated it will resolve the data automatically.',
+			},
+			{
 				displayName: 'Filters',
 				name: 'filters',
 				type: 'collection',
@@ -643,17 +657,22 @@ export class CiscoWebexTrigger implements INodeType {
 	};
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
-		const bodyData = this.getBodyData();
+		let bodyData = this.getBodyData();
 		const headers = this.getHeaderData() as IDataObject;
 		const req = this.getRequestObject();
+		const resolveData = this.getNodeParameter('resolveData', false) as boolean;
 		const { secret } = this.getCredentials('ciscoWebexOAuth2Api') as IDataObject;
-
 		if (secret !== '') {
 			//@ts-ignore
-			const computedSignature = createHmac('sha1', secret as string).update(req.rawBody).digest('hexççç');
+			const computedSignature = createHmac('sha1', secret as string).update(req.rawBody).digest('hex');
 			if (headers['x-spark-signature'] !== computedSignature) {
 				return {};
 			}
+		}
+
+		if (resolveData) {
+			const { data: { id } } = bodyData as { data: { id: string } };
+			bodyData = await webexApiRequest.call(this, 'GET', `/attachment/actions/${id}`);
 		}
 
 		return {

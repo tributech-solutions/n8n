@@ -15,6 +15,7 @@ import {
 } from 'n8n-workflow';
 
 import {
+	getAttachemnts,
 	webexApiRequest,
 	webexApiRequestAllItems,
 } from './GenericFunctions';
@@ -66,20 +67,18 @@ export class CiscoWebex implements INodeType {
 
 	methods = {
 		loadOptions: {
-			// Get all the available groups to display them to user so that he can
-			// select them easily
-			// async getRooms(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-			// 	const returnData: INodePropertyOptions[] = [];
+			async getRooms(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const returnData: INodePropertyOptions[] = [];
 
-			// 	const rooms = await webexApiRequestAllItems.call(this, 'items', 'GET', '/rooms', {}, { teamId: "Y2lzY29zcGFyazovL3VzL1JPT00vNjRlNDVhZTAtYzQ2Yi0xMWU1LTlkZjktMGQ0MWUzNDIxOTcz" });
-			// 	for (const room of rooms) {
-			// 		returnData.push({
-			// 			name: room.title,
-			// 			value: room.id,
-			// 		});
-			// 	}
-			// 	return returnData;
-			// },
+				const rooms = await webexApiRequestAllItems.call(this, 'items', 'GET', '/rooms');
+				for (const room of rooms) {
+					returnData.push({
+						name: room.title,
+						value: room.id,
+					});
+				}
+				return returnData;
+			},
 		},
 	};
 
@@ -111,18 +110,16 @@ export class CiscoWebex implements INodeType {
 					const destination = this.getNodeParameter('destination', i);
 					const markdown = this.getNodeParameter('markdown', i);
 					const file = this.getNodeParameter('additionalFields.fileUi.fileValue', i, {}) as IDataObject;
-
 					const body = {} as IDataObject;
-
 					if (destination === 'room') {
 						body['roomId'] = this.getNodeParameter('roomId', i);
 					}
 
-					if (destination === 'toPersonId') {
+					if (destination === 'personId') {
 						body['toPersonId'] = this.getNodeParameter('toPersonId', i);
 					}
 
-					if (destination === 'toPersonEmail') {
+					if (destination === 'personEmail') {
 						body['toPersonEmail'] = this.getNodeParameter('toPersonEmail', i);
 					}
 
@@ -131,6 +128,8 @@ export class CiscoWebex implements INodeType {
 					} else {
 						body['text'] = this.getNodeParameter('text', i);
 					}
+
+					body.attachments = getAttachemnts(this.getNodeParameter('additionalFields.attachmentsUi.attachmentValues', i, []) as IDataObject[]);
 
 					if (Object.keys(file).length) {
 
