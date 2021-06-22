@@ -44,7 +44,7 @@ export async function webexApiRequest(this: IExecuteFunctions | ILoadOptionsFunc
 	}
 }
 
-export async function webexApiRequestAllItems(this: IExecuteFunctions | ILoadOptionsFunctions | IHookFunctions, propertyName: string, method: string, endpoint: string, body: any = {}, query: IDataObject = {}): Promise<any> { // tslint:disable-line:no-any
+export async function webexApiRequestAllItems(this: IExecuteFunctions | ILoadOptionsFunctions | IHookFunctions, propertyName: string, method: string, endpoint: string, body: any = {}, query: IDataObject = {}, options: IDataObject = {}): Promise<any> { // tslint:disable-line:no-any
 
 	const returnData: IDataObject[] = [];
 
@@ -52,7 +52,7 @@ export async function webexApiRequestAllItems(this: IExecuteFunctions | ILoadOpt
 	let uri: string | undefined;
 	query.max = 100;
 	do {
-		responseData = await webexApiRequest.call(this, method, endpoint, body, query, uri, { resolveWithFullResponse: true });
+		responseData = await webexApiRequest.call(this, method, endpoint, body, query, uri, { resolveWithFullResponse: true, ...options });
 		if (responseData.headers.link) {
 			uri = responseData.headers['link'].split(';')[0].replace('<', '').replace('>', '');
 		}

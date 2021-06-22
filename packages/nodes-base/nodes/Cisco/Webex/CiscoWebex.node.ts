@@ -21,9 +21,13 @@ import {
 } from './GenericFunctions';
 
 import {
+	meetingFields,
+	meetingOperations,
 	messageFields,
 	messageOperations,
 } from './descriptions';
+
+import * as moment from 'moment-timezone';
 
 export class CiscoWebex implements INodeType {
 	description: INodeTypeDescription = {
@@ -53,6 +57,10 @@ export class CiscoWebex implements INodeType {
 				type: 'options',
 				options: [
 					{
+						name: 'Meeeting',
+						value: 'meeting',
+					},
+					{
 						name: 'Message',
 						value: 'message',
 					},
@@ -60,6 +68,8 @@ export class CiscoWebex implements INodeType {
 				default: 'message',
 				description: 'Resource to consume',
 			},
+			...meetingOperations,
+			...meetingFields,
 			...messageOperations,
 			...messageFields,
 		],
@@ -69,12 +79,22 @@ export class CiscoWebex implements INodeType {
 		loadOptions: {
 			async getRooms(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				const returnData: INodePropertyOptions[] = [];
-
 				const rooms = await webexApiRequestAllItems.call(this, 'items', 'GET', '/rooms');
 				for (const room of rooms) {
 					returnData.push({
 						name: room.title,
 						value: room.id,
+					});
+				}
+				return returnData;
+			},
+			async getSites(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const returnData: INodePropertyOptions[] = [];
+				const sites = await webexApiRequestAllItems.call(this, 'sites', 'GET', '/meetingPreferences/sites');
+				for (const site of sites) {
+					returnData.push({
+						name: site.siteUrl,
+						value: site.siteUrl,
 					});
 				}
 				return returnData;
@@ -85,7 +105,7 @@ export class CiscoWebex implements INodeType {
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: IDataObject[] = [];
-
+		const timezone = this.getTimezone();
 		const resource = this.getNodeParameter('resource', 0) as string;
 		const operation = this.getNodeParameter('operation', 0) as string;
 
@@ -247,6 +267,126 @@ export class CiscoWebex implements INodeType {
 					responseData = await webexApiRequest.call(this, 'PUT', endpoint, body);
 				}
 			}
+
+			if (resource === 'meeting') {
+				if (operation === 'create') {
+					const title = this.getNodeParameter('title', i) as string;
+					const start = this.getNodeParameter('start', i) as string;
+					const end = this.getNodeParameter('end', i) as string;
+					const invitees = this.getNodeParameter('additionalFields.inviteesUi.inviteeValues', i, []) as IDataObject[];
+					const additionalFields = this.getNodeParameter('additionalFields', i) as IDataObject;
+
+					const body: IDataObject = {
+						title,
+						start: moment.tz(start, timezone).format(),
+						end: moment.tz(end, timezone).format(),
+						...additionalFields,
+					};
+
+					if (invitees) {
+						body['invitees'] = invitees;
+						delete body.inviteesUi;
+					}
+
+					if (!Object.keys(body.registration as IDataObject).length) {
+						delete body.registration;
+					}
+
+					responseData = await webexApiRequest.call(this, 'POST', '/meetings', body);
+				}
+
+				if (operation === 'delete') {
+					const meetingId = this.getNodeParameter('meetingId', i) as string;
+					const options = this.getNodeParameter('options', i) as IDataObject;
+
+					const qs: IDataObject = {
+						...options,
+					};
+
+					responseData = await webexApiRequest.call(this, 'DELETE', `/meetings/${meetingId}`, {}, qs);
+				}
+
+				if (operation === 'get') {
+					const meetingId = this.getNodeParameter('meetingId', i) as string;
+					const options = this.getNodeParameter('options', i) as IDataObject;
+					let headers = {};
+
+					const qs: IDataObject = {
+						...options,
+					};
+
+					if (options.passsword) {
+						headers = {
+							passsword: options.passsword,
+						};
+					}
+
+					responseData = await webexApiRequest.call(this, 'GET', `/meetings/${meetingId}`, {}, qs, undefined, { headers });
+				}
+
+				if (operation === 'getAll') {
+					const filters = this.getNodeParameter('filters', i) as IDataObject;
+					const options = this.getNodeParameter('options', i) as IDataObject;
+					const returnAll = this.getNodeParameter('returnAll', i) as boolean;
+					let headers = {};
+
+					const qs: IDataObject = {
+						...filters,
+					};
+
+					if (options.passsword) {
+						headers = {
+							passsword: options.passsword,
+						};
+					}
+
+					if (qs.from) {
+						qs.from = moment.tz(qs.from, timezone).format();
+					}
+
+					if (qs.to) {
+						qs.to = moment.tz(qs.to, timezone).format();
+					}
+
+					if (returnAll === true) {
+						responseData = await webexApiRequestAllItems.call(this, 'items', 'GET', '/meetings', {}, qs, { headers });
+					} else {
+						qs.max = this.getNodeParameter('limit', i) as number;
+						responseData = await webexApiRequest.call(this, 'GET', '/meetings', {}, qs, undefined, { headers });
+						responseData = responseData.items;
+					}
+				}
+
+				if (operation === 'update') {
+					const meetingId = this.getNodeParameter('meetingId', i) as string;
+					const invitees = this.getNodeParameter('updateFields.inviteesUi.inviteeValues', i, []) as IDataObject[];
+					const updateFields = this.getNodeParameter('updateFields', i) as IDataObject;
+
+					const body: IDataObject = {
+						...updateFields,
+					};
+
+					if (invitees) {
+						body['invitees'] = invitees;
+						delete body.inviteesUi;
+					}
+
+					if (!Object.keys(body.registration as IDataObject).length) {
+						delete body.registration;
+					}
+
+					if (body.from) {
+						body.from = moment.tz(body.from, timezone).format();
+					}
+
+					if (body.to) {
+						body.to = moment.tz(body.to, timezone).format();
+					}
+
+					responseData = await webexApiRequest.call(this, 'PUT', `/meetings/${meetingId}`, body);
+				}
+			}
+
 			Array.isArray(responseData)
 				? returnData.push(...responseData)
 				: returnData.push(responseData);
